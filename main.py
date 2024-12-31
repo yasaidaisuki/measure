@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import matplotlib.ticker as ticker
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
 
 # Initialize the plot
 fig, ax = plt.subplots()
@@ -28,6 +32,11 @@ if not df['frequency'].equals(df_raw['frequency']):
     raise ValueError("Frequency columns in the datasets do not match!")
 
 df['equalized'] = df['raw'] - df_raw['raw']
+
+######################## OBJECTIVE ANALYSIS ########################
+'''
+deviation/variation calculations using numpy, pandas, matplotlib
+'''
 
 # General RMSE and MAE
 rmse = np.sqrt(np.mean(df['equalized']**2))
@@ -110,6 +119,50 @@ else:
     plt.plot(df_raw['frequency'], df_raw['raw'], label='Raw')
 
 
+######################## tonal balance and preferences analysis using pytorch ######################## 
+
+''' POC 
+# Example Neural Network
+class HeadphoneSoundModel(nn.Module):
+    def __init__(self):
+        super(HeadphoneSoundModel, self).__init__()
+        self.fc1 = nn.Linear(100, 64)  # Adjust input size to match data shape
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, 1)  # For regression, output a single value (e.g., score)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+# Prepare your data (frequency response -> ratings/labels)
+# Example frequency response data (100 frequencies)
+x_train = torch.rand((100, 100))  # 100 samples, 100 frequency values per sample
+y_train = torch.rand(100, 1)  # Ratings or scores for each headphone
+
+# Create DataLoader
+train_data = TensorDataset(x_train, y_train)
+train_loader = DataLoader(train_data, batch_size=10, shuffle=True)
+
+# Model, loss, and optimizer
+model = HeadphoneSoundModel()
+loss_fn = nn.MSELoss()  # Use CrossEntropyLoss if classification
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+# Training loop
+for epoch in range(100):
+    model.train()
+    for data, target in train_loader:
+        optimizer.zero_grad()
+        output = model(data)
+        loss = loss_fn(output, target)
+        loss.backward()
+        optimizer.step()
+    print(f"Epoch {epoch+1}, Loss: {loss.item()}")
+
+# Evaluate model on test data
+'''
 
 # Finalize plot
 ax.grid(True)
