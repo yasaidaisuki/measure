@@ -5,7 +5,10 @@ import matplotlib.ticker as ticker
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
+from torchvision import datasets
+from torchvision.transforms import ToTensor
+from torch.utils.data import DataLoader, Dataset
+import os
 
 # Initialize the plot
 fig, ax = plt.subplots()
@@ -120,49 +123,41 @@ else:
 
 
 ######################## tonal balance and preferences analysis using pytorch ######################## 
+#### dataset 
+class FrequencyResponseDataset(Dataset):
+    def __int__(self, folder_path, transform=None):
+        self.folder_path = folder_path
+        self.transform = transform
+        self.file_paths = [
+            os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.csv')
+        ]
+    
+    def __len__(self):
+        return len(self.folder_path)
+    
+    def __getitem__(self, idx):
+        # Load the CSV file
+        file_path = self.file_paths[idx]
+        data = pd.read_csv(file_path)
+        
+        # Extract frequency and amplitude
+        frequencies = data['frequency'].values  # numpy array
+        amplitudes = data['raw'].values  # numpy array
+        
+        # Convert to PyTorch tensors
+        frequencies = torch.tensor(frequencies, dtype=torch.float32)
+        amplitudes = torch.tensor(amplitudes, dtype=torch.float32)
+        
+        sample = {'frequencies': frequencies, 'amplitudes': amplitudes}
+        
+        # Apply transformations if any
+        if self.transform:
+            sample = self.transform(sample)
+        
+        return sample
 
-''' POC 
-# Example Neural Network
-class HeadphoneSoundModel(nn.Module):
-    def __init__(self):
-        super(HeadphoneSoundModel, self).__init__()
-        self.fc1 = nn.Linear(100, 64)  # Adjust input size to match data shape
-        self.fc2 = nn.Linear(64, 32)
-        self.fc3 = nn.Linear(32, 1)  # For regression, output a single value (e.g., score)
-
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-# Prepare your data (frequency response -> ratings/labels)
-# Example frequency response data (100 frequencies)
-x_train = torch.rand((100, 100))  # 100 samples, 100 frequency values per sample
-y_train = torch.rand(100, 1)  # Ratings or scores for each headphone
-
-# Create DataLoader
-train_data = TensorDataset(x_train, y_train)
-train_loader = DataLoader(train_data, batch_size=10, shuffle=True)
-
-# Model, loss, and optimizer
-model = HeadphoneSoundModel()
-loss_fn = nn.MSELoss()  # Use CrossEntropyLoss if classification
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-# Training loop
-for epoch in range(100):
-    model.train()
-    for data, target in train_loader:
-        optimizer.zero_grad()
-        output = model(data)
-        loss = loss_fn(output, target)
-        loss.backward()
-        optimizer.step()
-    print(f"Epoch {epoch+1}, Loss: {loss.item()}")
-
-# Evaluate model on test data
-'''
+train_dataloader = DataLoader(training_data, batch_size=64, shuffle=True)
+test_dataloader = DataLoader(test_data, batch_size=64, shuffle=True)
 
 # Finalize plot
 ax.grid(True)
