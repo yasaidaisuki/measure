@@ -5,9 +5,9 @@ import matplotlib.ticker as ticker
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets
-from torchvision.transforms import ToTensor
+from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms import ToTensor
 import os
 
 # Initialize the plot
@@ -123,41 +123,56 @@ else:
 
 
 ######################## tonal balance and preferences analysis using pytorch ######################## 
-#### dataset 
-class FrequencyResponseDataset(Dataset):
-    def __int__(self, folder_path, transform=None):
+### dataset
+class CSVDataset(Dataset):
+    def __init__(self, folder_path, transform=None):
         self.folder_path = folder_path
+        self.file_names = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
         self.transform = transform
-        self.file_paths = [
-            os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.csv')
-        ]
-    
+
     def __len__(self):
-        return len(self.folder_path)
-    
+        return len(self.file_names)
+
     def __getitem__(self, idx):
-        # Load the CSV file
-        file_path = self.file_paths[idx]
+        file_path = os.path.join(self.folder_path, self.file_names[idx])
         data = pd.read_csv(file_path)
         
-        # Extract frequency and amplitude
-        frequencies = data['frequency'].values  # numpy array
-        amplitudes = data['raw'].values  # numpy array
-        
-        # Convert to PyTorch tensors
-        frequencies = torch.tensor(frequencies, dtype=torch.float32)
-        amplitudes = torch.tensor(amplitudes, dtype=torch.float32)
-        
-        sample = {'frequencies': frequencies, 'amplitudes': amplitudes}
-        
-        # Apply transformations if any
-        if self.transform:
-            sample = self.transform(sample)
-        
-        return sample
+        # Example: Convert to PyTorch tensors (assuming numerical data)
+        features = data.iloc[:, :-1].values  # All columns except the last (features)
+        labels = data.iloc[:, -1].values    # Last column (labels)
 
-train_dataloader = DataLoader(training_data, batch_size=64, shuffle=True)
-test_dataloader = DataLoader(test_data, batch_size=64, shuffle=True)
+        if self.transform:
+            features = self.transform(features)
+        
+        return features, labels
+
+# Path to the folder containing CSV files
+folder_path = "path/to/your/csv/files"
+
+# Create the dataset
+dataset = CSVDataset(folder_path)
+
+# Create the DataLoader
+dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
+
+# Iterate through the DataLoader
+for batch_idx, (features, labels) in enumerate(dataloader):
+    print(f"Batch {batch_idx+1}:")
+    print("Features:", features)
+    print("Labels:", labels)
+
+
+
+### neural network model to predict tonal balance and preferences
+
+class NeuralNetowrk(nn.Module):
+    def __init__(self, in_feature=64, out_features=5):
+        
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+
 
 # Finalize plot
 ax.grid(True)
